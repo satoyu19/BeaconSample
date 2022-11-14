@@ -25,17 +25,15 @@
         android:orientation="horizontal"
         android:layout_weight="0">
         <Button
-            android:id="@+id/rangingButton"
-            android:onClick="rangingButtonTapped"
-            android:text="Disable Ranging"
+            android:id="@+id/start_btn"
+            android:text="開始"
             android:layout_width="0dp"
             android:layout_height="50dp"
             android:layout_weight="1">
         </Button>
         <Button
-            android:id="@+id/monitoringButton"
-            android:text="Disable Monitoring"
-            android:onClick="monitoringButtonTapped"
+            android:id="@+id/stop_btn"
+            android:text="停止"
             android:layout_width="0dp"
             android:layout_height="50dp"
             android:layout_weight="1">
