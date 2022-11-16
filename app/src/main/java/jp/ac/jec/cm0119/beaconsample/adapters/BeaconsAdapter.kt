@@ -1,14 +1,15 @@
 package jp.ac.jec.cm0119.beaconsample.adapters
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import jp.ac.jec.cm0119.beaconsample.BeaconState
 import jp.ac.jec.cm0119.beaconsample.databinding.BeaconsStateRowBinding
+import org.altbeacon.beacon.Beacon
 
-class BeaconsAdapter: RecyclerView.Adapter<BeaconsAdapter.MyViewHolder>() {
+class BeaconsAdapter(private val beacons: List<BeaconState>): RecyclerView.Adapter<BeaconsAdapter.MyViewHolder>() {
 
-    private var beacons = emptyList<BeaconState>()
+    var beacons = ArrayList<Beacon>()
 
     class MyViewHolder(private val binding: BeaconsStateRowBinding): RecyclerView.ViewHolder(binding.root) {
         //レイアウトとバインド
@@ -39,3 +40,12 @@ class BeaconsAdapter: RecyclerView.Adapter<BeaconsAdapter.MyViewHolder>() {
 
 
 }
+
+data class BeaconState(
+    val uuid: String,
+    val major: String,
+    val minor: String,
+    val rssi: String,
+    val txPower: String,
+    val distance: String
+)
