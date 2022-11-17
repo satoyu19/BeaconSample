@@ -17,6 +17,7 @@ import jp.ac.jec.cm0119.beaconsample.adapters.BeaconsAdapter
 import jp.ac.jec.cm0119.beaconsample.databinding.ActivityMainBinding
 import jp.ac.jec.cm0119.beaconsample.util.Constants
 import org.altbeacon.beacon.*
+import org.altbeacon.bluetooth.BluetoothMedic
 import javax.inject.Inject
 
 /**
@@ -61,26 +62,48 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
 
     //ビーコンのセットアップ
     fun setUpBeacon() {
-        //リージョン(監視領域)を設定することで、設置してあるビーコンを検知することができる
-        //インスタンス化の際に、UUID, Major, Minor の各々のフォーマットにマッチしないときは例外が吐かれるので対応が必要
-        /** 第一引数は必ず識別しになる一意のな文字列を入れること。複数のRegionを設定しても全て同じRegionの扱いになってしまう?**/
 
+        //uuidの例外処理
         val uuid = try {
             Identifier.parse(Constants.BEACON_UUID)
         } catch (e: Exception) {
             null
         }
 
-        // TODO: nullの時の動作確認、学校のビーコンが多い状況下でも確認する
+        //リージョン(監視領域)を設定することで、設置してあるビーコンを検知することができる
+        //インスタンス化の際に、UUID, Major, Minor の各々のフォーマットにマッチしないときは例外が吐かれるので対応が必要
+        /** 第一引数は必ず識別しになる一意のな文字列を入れること。複数のRegionを設定しても全て同じRegionの扱いになってしまう?**/
+        // TODO: nullの時の動作確認、学校のビーコンが多い状況下でも確認する →　Answer:学校等のビーコンが多い状況下では複数検出される
         mRegion = Region("iBeacon", uuid, null, null)   //uuid(16B(128b)?)
 
 //        mRegion = Region("iBeacon", null, null, null)
 
         beaconManager = BeaconManager.getInstanceForApplication(getApplication())
+        // デバッグを有効にすると、ライブラリからLogcatに多くの詳細なデバッグ情報が送信。トラブルシューティングに有効。
+        // BeaconManager.setDebug(true)
+
+        //bluetoothの問題を監視するコード
+        // BluetoothMedic.getInstance().enablePowerCycleOnFailures(this)
+        // BluetoothMedic.getInstance().enablePeriodicTests(this, BluetoothMedic.SCAN_TEST + BluetoothMedic.TRANSMIT_TEST)
+
         beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout(Constants.IBEACON_FORMAT)) // iBeaconのフォーマット指定
-        /** 以下のコードでスキャン感覚を変えられる **/
-        beaconManager.foregroundBetweenScanPeriod = 5000;
-        beaconManager.backgroundBetweenScanPeriod = 5000;
+        /** 以下のコードでスキャン感覚を変えられる(Long型) **/
+        beaconManager.foregroundBetweenScanPeriod = 5000
+        beaconManager.backgroundBetweenScanPeriod = 5000
+        beaconManager.foregroundScanPeriod = 1100
+
+        //デフォルトでは、ライブラリはAndroid 4-7で5分ごとにバックグラウンドでスキャン。
+        // Android 8+では、15分ごとにスケジュールされたスキャンジョブに制限される。
+        // より頻繁にスキャンを行いたい場合 (Android 8+ ではフォアグラウンドサービスが必要)。
+        //Android 8+ では、ライブラリ内蔵のフォアグラウンドサービスを使用して、この動作を解除することができます。
+        //setupForegroundService()
+        //beaconManager.setEnableScheduledScanJobs(false);
+        //beaconManager.setBackgroundBetweenScanPeriod(0);
+        //beaconManager.setBackgroundScanPeriod(1100);
+
+        //ビーコンが検出されない場合、レンジングコールバックはドロップアウトします
+        // beaconManager.setIntentScanningStrategyEnabled(true)
+
 
     }
 
@@ -96,7 +119,6 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
 
         //BeaconService に、渡された Region オブジェクトに一致するビーコンの探索を開始するように指示する
         beaconManager.startMonitoring(mRegion)
-
         beaconManager.startRangingBeacons(mRegion)
 
         beacons.value?.clear()
@@ -106,11 +128,11 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
     fun actionStopBtn() {
         beaconManager.stopMonitoring(mRegion)
         beaconManager.stopRangingBeacons(mRegion)
-        Log.i("beacon", _beacons.value?.size.toString())
     }
 
     //ビーコンの検知結果をbeaconsに追加する
     private fun detectionBeacon(beacons: MutableCollection<Beacon>?) {  //beacons　→　検知したすべてのビーコンを表す
+        Log.i("Test", "実行中")
         //つまり、ビーコンのuuidを指定しているため、一秒に一回固定のビーコンの情報が取れる
         beacons?.let {
             for (beacon in beacons) {   //ここは、常に一つだけと言うことになる
@@ -150,6 +172,7 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
 
     //リージョン内のビーコンが一つも表示されない時に呼び出される
     //本番ではdidEnterRegionの逆をする？
+
     override fun didExitRegion(region: Region?) {
         //領域からの退場を検知
         Log.d("iBeacon", "Exit Region ${region?.uniqueId}")
@@ -161,4 +184,23 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
         //領域への入退場のステータス変化を検知（INSIDE: 1, OUTSIDE: 0）
         Log.d("MainActivity", "Determine State: $state")
     }
+
+    //fun setupForegroundService() {
+    //        val builder = Notification.Builder(this, "BeaconReferenceApp")
+    //        builder.setSmallIcon(R.drawable.ic_launcher_background)
+    //        builder.setContentTitle("Scanning for Beacons")
+    //        val intent = Intent(this, MainActivity::class.java)
+    //        val pendingIntent = PendingIntent.getActivity(
+    //                this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT + PendingIntent.FLAG_IMMUTABLE
+    //        )
+    //        builder.setContentIntent(pendingIntent);
+    //        val channel =  NotificationChannel("beacon-ref-notification-id",
+    //            "My Notification Name", NotificationManager.IMPORTANCE_DEFAULT)
+    //        channel.setDescription("My Notification Channel Description")
+    //        val notificationManager =  getSystemService(
+    //                Context.NOTIFICATION_SERVICE) as NotificationManager
+    //        notificationManager.createNotificationChannel(channel);
+    //        builder.setChannelId(channel.getId());
+    //        BeaconManager.getInstanceForApplication(this).enableForegroundServiceScanning(builder.build(), 456);
+    //    }
 }

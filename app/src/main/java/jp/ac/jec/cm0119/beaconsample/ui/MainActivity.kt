@@ -1,6 +1,8 @@
 package jp.ac.jec.cm0119.beaconsample.ui
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -21,13 +23,22 @@ import org.altbeacon.beacon.*
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
+    /**
+     *バックグラウンド処理のための追加
+     */
+    private val TAG: String = MainActivity::class.java.simpleName
+    companion object {
+        fun createIntent(context: Context): Intent = Intent(context, MainActivity::class.java)
+    }
+
     private lateinit var binding: ActivityMainBinding
 
     private val mainViewModel: MainViewModel by viewModels()
 
     //呼び出し元の結果を受けて処理を行う
     private val permissionResult =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result: Map<String, Boolean> ->
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions())
+        { result: Map<String, Boolean> ->
             //permission(権限名), isGrant(有効 or 無効)
            mainViewModel.checkPermission(result)
         }
@@ -41,6 +52,7 @@ class MainActivity : AppCompatActivity() {
         // TODO: 別の場所で更新する？
         binding.beaconsList.adapter = mAdapter
         binding.beaconsList.layoutManager = LinearLayoutManager(this)
+        binding.mainViewModel = mainViewModel
         val view = binding.root
         setContentView(view)
 
@@ -65,10 +77,11 @@ class MainActivity : AppCompatActivity() {
 
         //ビーコン情報群の変化を監視、recyclerViewの更新
         mainViewModel.beacons.observe(this) {
-            Log.i("TEST", it.size.toString())
             mAdapter.setItem(it)
         }
-        mainViewModel.setUpBeacon()
 
+        mainViewModel.setUpBeacon()
     }
+
+
 }

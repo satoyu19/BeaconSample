@@ -5,4 +5,7 @@ import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
 class MyApplication : Application() {
+    /**
+     * アプリケーションクラスでビーコンの監視を始めるとフォアグラウンドとバックグラウンドの切り替えをしてくれる？
+     */
 }
