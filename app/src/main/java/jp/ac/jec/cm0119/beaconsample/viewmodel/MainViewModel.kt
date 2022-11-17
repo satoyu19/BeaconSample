@@ -19,19 +19,22 @@ import jp.ac.jec.cm0119.beaconsample.util.Constants
 import org.altbeacon.beacon.*
 import javax.inject.Inject
 
+/**
+ * LiveDataでListの監視をする際に、add等では通知されない。どうすれば良い？
+ * (発火点はpostValue，setValueを実施した時)
+ */
 @HiltViewModel
 class MainViewModel @Inject constructor(application: Application): AndroidViewModel(application), RangeNotifier, MonitorNotifier {
 
     //Beacon の電波が複数存在する場合に検知対象の Beacon を識別するためのもの
     private lateinit var mRegion: Region
 
-    private lateinit var binding: ActivityMainBinding
-
-    private val v = MutableLiveData<String>()
     //取得したビーコンの情報群
-    private var _beacons = MutableLiveData<MutableList<BeaconState>>()
+    private var _beacons = MutableLiveData<MutableList<BeaconState>>(mutableListOf())
     val beacons : LiveData<MutableList<BeaconState>>
     get() = _beacons
+
+    private var tempBeacons = mutableListOf<BeaconState>()
 
     //Beacon検知で利用
     lateinit var beaconManager: BeaconManager
@@ -69,7 +72,7 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
         }
 
         // TODO: nullの時の動作確認、学校のビーコンが多い状況下でも確認する
-        mRegion = Region("iBeacon", uuid, null, null)
+        mRegion = Region("iBeacon", uuid, null, null)   //uuid(16B(128b)?)
 
 //        mRegion = Region("iBeacon", null, null, null)
 
@@ -81,6 +84,7 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
 
     }
 
+    //開始ボタンの挙動
     fun actionStartBtn() {
         //BeaconService がある地域のビーコンを見たり、見なくなったりするたびに呼び出すべきクラスを指定
         // 登録の解除はremoveMonitoreNotifier
@@ -98,6 +102,7 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
         beacons.value?.clear()
     }
 
+    //停止ボタンの挙動
     fun actionStopBtn() {
         beaconManager.stopMonitoring(mRegion)
         beaconManager.stopRangingBeacons(mRegion)
@@ -105,9 +110,10 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
     }
 
     //ビーコンの検知結果をbeaconsに追加する
-    private fun detectionBeacon(beacons: MutableCollection<Beacon>?) {
+    private fun detectionBeacon(beacons: MutableCollection<Beacon>?) {  //beacons　→　検知したすべてのビーコンを表す
+        //つまり、ビーコンのuuidを指定しているため、一秒に一回固定のビーコンの情報が取れる
         beacons?.let {
-            for (beacon in beacons) {
+            for (beacon in beacons) {   //ここは、常に一つだけと言うことになる
                 val beaconState = BeaconState(
                     beacon.id1.toString(),
                     beacon.id2.toString(),
@@ -116,13 +122,15 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
                     beacon.txPower.toString(),
                     beacon.distance.toString()
                 )
-                if (this._beacons.value == null) {
-                    _beacons.value = mutableListOf(beaconState)
-                } else {
-                    _beacons.value!!.add(beaconState)
-                }
-                Log.i("beacon", this._beacons.value!!.size.toString())
+//                if (this._beacons.value == null) {
+//                    _beacons.value = mutableListOf(beaconState)
+//                } else {
+//                    _beacons.value!!.add(beaconState)
+//                    Log.i("Test", _beacons.value!!.size.toString())
+//                }
+                tempBeacons.add(beaconState)
             }
+            _beacons.value = tempBeacons
         }
     }
 
@@ -132,13 +140,16 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
     override fun didRangeBeaconsInRegion(beacons: MutableCollection<Beacon>?, region: Region?) {
         detectionBeacon(beacons)
     }
+
     //リージョン内の少なくとも一つのビーコンが表示されている時に呼び出される(region → 探すべきビーコンの基準を定義するリージョン)
+    //本番ではここで領域の入場を検知して、そのことをboolean等で記録しておく？
     override fun didEnterRegion(region: Region?) {
         //領域への入場を検知
         Log.d("iBeacon", "Enter Region ${region?.uniqueId}")
     }
 
     //リージョン内のビーコンが一つも表示されない時に呼び出される
+    //本番ではdidEnterRegionの逆をする？
     override fun didExitRegion(region: Region?) {
         //領域からの退場を検知
         Log.d("iBeacon", "Exit Region ${region?.uniqueId}")

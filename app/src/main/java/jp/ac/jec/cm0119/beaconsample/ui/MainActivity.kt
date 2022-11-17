@@ -1,4 +1,4 @@
-package jp.ac.jec.cm0119.beaconsample
+package jp.ac.jec.cm0119.beaconsample.ui
 
 import android.Manifest
 import android.os.Build
@@ -23,9 +23,6 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
-    //Beacon検知で利用
-    private lateinit var beaconManager: BeaconManager
-
     private val mainViewModel: MainViewModel by viewModels()
 
     //呼び出し元の結果を受けて処理を行う
@@ -35,7 +32,7 @@ class MainActivity : AppCompatActivity() {
            mainViewModel.checkPermission(result)
         }
 
-    private val mAdapter by lazy { mainViewModel.beacons.value?.let { BeaconsAdapter(it) } }
+    private val mAdapter by lazy { BeaconsAdapter() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,18 +63,12 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        //モニタリング、リージングの開始
-        binding.startBtn.setOnClickListener {
-            mainViewModel.actionStartBtn()
+        //ビーコン情報群の変化を監視、recyclerViewの更新
+        mainViewModel.beacons.observe(this) {
+            Log.i("TEST", it.size.toString())
+            mAdapter.setItem(it)
         }
-
-        //終了
-        binding.stopBtn.setOnClickListener {
-            mainViewModel.actionStopBtn()
-            binding.beaconsList.adapter = mAdapter
-            binding.beaconsList.layoutManager = LinearLayoutManager(this)
-        }
-
         mainViewModel.setUpBeacon()
+
     }
 }

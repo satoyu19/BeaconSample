@@ -6,10 +6,18 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import jp.ac.jec.cm0119.beaconsample.databinding.BeaconsStateRowBinding
 import org.altbeacon.beacon.Beacon
+import java.util.Collections
 
-class BeaconsAdapter(private val beacons: List<BeaconState>): RecyclerView.Adapter<BeaconsAdapter.MyViewHolder>() {
+class BeaconsAdapter(): RecyclerView.Adapter<BeaconsAdapter.MyViewHolder>() {
 
-    var beacons = ArrayList<Beacon>()
+    private var beacons = mutableListOf<BeaconState>()
+
+    fun setItem(beacons: MutableList<BeaconState>) {
+        this.beacons = beacons
+        this.beacons.reverse()  //最新のbeacon情報を一番上に表示される様にする
+        Log.i("beacons", beacons.size.toString())
+        notifyDataSetChanged()      //recycleViewの更新
+    }
 
     class MyViewHolder(private val binding: BeaconsStateRowBinding): RecyclerView.ViewHolder(binding.root) {
         //レイアウトとバインド
