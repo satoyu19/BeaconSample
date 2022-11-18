@@ -15,3 +15,8 @@ service: https://qiita.com/b150005/items/bc7054a520d4b858dc0f
 
 AltBeacon: Bluetoothを利用した機能、パーミッションが必要。(使っているビーコンのライブラリでは、デフォルトでAltBeaconのみを検出する)<br>
 IBeacon: Bluetoos LEを利用した機能になっているため、それを使用できる端末のみでインストール可能にする。<br>
+
+## 調査
+実装の方法<br>
+  1：RangeNotifier, MonitorNotifierを具象クラスで実装し、BeaconManagerのaddで登録する　← こっちの方が細かく処理できる?<br>
+  2：regionViewModelのLiveDataにObserveを設定し、監視することで処理する。<br>
