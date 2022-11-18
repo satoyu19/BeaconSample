@@ -20,3 +20,4 @@ IBeacon: Bluetoos LEを利用した機能になっているため、それを使
 実装の方法<br>
   1：RangeNotifier, MonitorNotifierを具象クラスで実装し、BeaconManagerのaddで登録する　← こっちの方が細かく処理できる?<br>
   2：regionViewModelのLiveDataにObserveを設定し、監視することで処理する。<br>
+どちらも実装済み、機能は同一。実装によってTODOのコメントイン、コメントアウト要。
