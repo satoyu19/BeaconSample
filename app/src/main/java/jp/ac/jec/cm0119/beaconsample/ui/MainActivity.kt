@@ -10,6 +10,8 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import jp.ac.jec.cm0119.beaconsample.adapters.BeaconState
@@ -22,14 +24,6 @@ import org.altbeacon.beacon.*
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-
-    /**
-     *バックグラウンド処理のための追加
-     */
-    private val TAG: String = MainActivity::class.java.simpleName
-    companion object {
-        fun createIntent(context: Context): Intent = Intent(context, MainActivity::class.java)
-    }
 
     private lateinit var binding: ActivityMainBinding
 
@@ -49,10 +43,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
-        // TODO: 別の場所で更新する？
+
         binding.beaconsList.adapter = mAdapter
         binding.beaconsList.layoutManager = LinearLayoutManager(this)
         binding.mainViewModel = mainViewModel
+
+        // TODO: クラス実装でのビーコン検知の場合はコメントアウト
+        //ビーコンデータのLiveDataオブザーバーを設定
+        val regionViewModel = BeaconManager.getInstanceForApplication(this).getRegionViewModel(mainViewModel.mRegion)
+        //オブザーバは、監視しているregionStateが変化するたびに呼び出される（insideとoutsideの2種類）。
+        regionViewModel.regionState.observe(this, monitoringObserver)
+        regionViewModel.rangedBeacons.observe(this, rangingObserver)
+
         val view = binding.root
         setContentView(view)
 
@@ -83,5 +85,36 @@ class MainActivity : AppCompatActivity() {
         mainViewModel.setUpBeacon()
     }
 
+    var alertDialog: AlertDialog? = null
 
+    private val monitoringObserver = Observer<Int> { state ->
+        var dialogTitle = "ビーコン検出"
+        var dialogMessage = "didEnterRegionEvent が発生しました。"
+        var stateString = "inside"
+        if (state == MonitorNotifier.OUTSIDE) { //ビーコン圏外の場合
+            dialogTitle = "ビーコンが検出されない"
+            dialogMessage = "didExitRegionEventが発生しました。"
+            stateString = "outside"
+        }
+        else {
+            Log.i("MainActivity", "ビーコン圏内")
+        }
+        Log.d("MainActivity", "monitoring state changed to : $stateString")
+        val builder =
+            AlertDialog.Builder(this)
+        builder.setTitle(dialogTitle)
+        builder.setMessage(dialogMessage)
+        builder.setPositiveButton(android.R.string.ok, null)
+        alertDialog?.dismiss()
+        alertDialog = builder.create()
+        alertDialog?.show()
+    }
+
+    private val rangingObserver = Observer<Collection<Beacon>> { beacons ->
+        Log.d("MainActivity", "Ranged: ${beacons.count()} beacons")
+        if (mainViewModel.beaconManager.rangedRegions.size > 0) { //ビーコンが一つ以上検出されている場合
+            Log.i("MainActivity","レンジング有効: ${beacons.count()} 個のビーコンが検出されました")
+            mainViewModel.detectionBeacon(beacons as MutableCollection<Beacon>?)
+        }
+    }
 }

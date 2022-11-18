@@ -25,10 +25,22 @@ import javax.inject.Inject
  * (発火点はpostValue，setValueを実施した時)
  */
 @HiltViewModel
-class MainViewModel @Inject constructor(application: Application): AndroidViewModel(application), RangeNotifier, MonitorNotifier {
+class MainViewModel @Inject constructor(application: Application): AndroidViewModel(application), RangeNotifier, MonitorNotifier {  //モニター：範囲の出入り、 レンジ：動きの検知
 
     //Beacon の電波が複数存在する場合に検知対象の Beacon を識別するためのもの
-    private lateinit var mRegion: Region
+    val mRegion by lazy {
+        //uuidの例外処理
+        val uuid = try {
+            Identifier.parse(Constants.BEACON_UUID)
+        } catch (e: Exception) {
+            null
+        }
+        //リージョン(監視領域)を設定することで、設置してあるビーコンを検知することができる
+        //インスタンス化の際に、UUID, Major, Minor の各々のフォーマットにマッチしないときは例外が吐かれるので対応が必要
+        /** 第一引数は必ず識別しになる一意のな文字列を入れること。複数のRegionを設定しても全て同じRegionの扱いになってしまう?**/
+        // TODO: nullの時の動作確認、学校のビーコンが多い状況下でも確認する →　Answer:学校等のビーコンが多い状況下では複数検出される
+        Region("iBeacon", uuid, null, null)   //uuid(16B(128b)?)
+    }
 
     //取得したビーコンの情報群
     private var _beacons = MutableLiveData<MutableList<BeaconState>>(mutableListOf())
@@ -63,22 +75,8 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
     //ビーコンのセットアップ
     fun setUpBeacon() {
 
-        //uuidの例外処理
-        val uuid = try {
-            Identifier.parse(Constants.BEACON_UUID)
-        } catch (e: Exception) {
-            null
-        }
-
-        //リージョン(監視領域)を設定することで、設置してあるビーコンを検知することができる
-        //インスタンス化の際に、UUID, Major, Minor の各々のフォーマットにマッチしないときは例外が吐かれるので対応が必要
-        /** 第一引数は必ず識別しになる一意のな文字列を入れること。複数のRegionを設定しても全て同じRegionの扱いになってしまう?**/
-        // TODO: nullの時の動作確認、学校のビーコンが多い状況下でも確認する →　Answer:学校等のビーコンが多い状況下では複数検出される
-        mRegion = Region("iBeacon", uuid, null, null)   //uuid(16B(128b)?)
-
-//        mRegion = Region("iBeacon", null, null, null)
-
         beaconManager = BeaconManager.getInstanceForApplication(getApplication())
+        val regionViewModel = beaconManager.getRegionViewModel(mRegion)
         // デバッグを有効にすると、ライブラリからLogcatに多くの詳細なデバッグ情報が送信。トラブルシューティングに有効。
         // BeaconManager.setDebug(true)
 
@@ -90,7 +88,7 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
         /** 以下のコードでスキャン感覚を変えられる(Long型) **/
         beaconManager.foregroundBetweenScanPeriod = 5000
         beaconManager.backgroundBetweenScanPeriod = 5000
-        beaconManager.foregroundScanPeriod = 1100
+//        beaconManager.foregroundScanPeriod = 1100     スキャン時間?
 
         //デフォルトでは、ライブラリはAndroid 4-7で5分ごとにバックグラウンドでスキャン。
         // Android 8+では、15分ごとにスケジュールされたスキャンジョブに制限される。
@@ -109,13 +107,14 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
 
     //開始ボタンの挙動
     fun actionStartBtn() {
+        // TODO: ビーコンの実装方法によってコメントイン、コメントアウト 
         //BeaconService がある地域のビーコンを見たり、見なくなったりするたびに呼び出すべきクラスを指定
         // 登録の解除はremoveMonitoreNotifier
-        beaconManager.addMonitorNotifier(this)  //引数→登録するMonitorNotifier
+//        beaconManager.addMonitorNotifier(this)  //引数→登録するMonitorNotifier
 
         //BeaconServiceがレンジングデータを取得するたびに呼び出されるクラスを指定
         //登録解除は、(@link #removeRangeNotifier)
-        beaconManager.addRangeNotifier(this)    //引数→登録されるRangeNotifier
+//        beaconManager.addRangeNotifier(this)    //引数→登録されるRangeNotifier
 
         //BeaconService に、渡された Region オブジェクトに一致するビーコンの探索を開始するように指示する
         beaconManager.startMonitoring(mRegion)
@@ -131,7 +130,7 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
     }
 
     //ビーコンの検知結果をbeaconsに追加する
-    private fun detectionBeacon(beacons: MutableCollection<Beacon>?) {  //beacons　→　検知したすべてのビーコンを表す
+    fun detectionBeacon(beacons: MutableCollection<Beacon>?) {  //beacons　→　検知したすべてのビーコンを表す
         Log.i("Test", "実行中")
         //つまり、ビーコンのuuidを指定しているため、一秒に一回固定のビーコンの情報が取れる
         beacons?.let {
@@ -172,7 +171,6 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
 
     //リージョン内のビーコンが一つも表示されない時に呼び出される
     //本番ではdidEnterRegionの逆をする？
-
     override fun didExitRegion(region: Region?) {
         //領域からの退場を検知
         Log.d("iBeacon", "Exit Region ${region?.uniqueId}")
