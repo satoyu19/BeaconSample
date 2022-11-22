@@ -107,7 +107,7 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
 
     //開始ボタンの挙動
     fun actionStartBtn() {
-        // TODO: ビーコンの実装方法によってコメントイン、コメントアウト 
+        // TODO: ビーコンの実装方法によってコメントイン、コメントアウト
         //BeaconService がある地域のビーコンを見たり、見なくなったりするたびに呼び出すべきクラスを指定
         // 登録の解除はremoveMonitoreNotifier
 //        beaconManager.addMonitorNotifier(this)  //引数→登録するMonitorNotifier
