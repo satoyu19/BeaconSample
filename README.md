@@ -7,6 +7,7 @@ android-beacon-library：https://github.com/AltBeacon/android-beacon-library<br>
 permission:https://qiita.com/kenmaeda51415/items/d28b714cba8f710fb5db<br>
 権限リクエスト：https://developer.android.com/training/location/permissions?hl=ja<br>
 フォアグラウンド・バックグラウンドでのスキャン：https://altbeacon.github.io/android-beacon-library/foreground-service.html, https://altbeacon.github.io/android-beacon-library/battery_manager.html<br>
+フォアグラウンドサービス：https://altbeacon.github.io/android-beacon-library/foreground-service.html<br>
 service: https://qiita.com/b150005/items/bc7054a520d4b858dc0f
 
 ## BLEAD Beacon 仕様
