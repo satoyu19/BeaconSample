@@ -13,7 +13,6 @@ class BeaconsAdapter(): RecyclerView.Adapter<BeaconsAdapter.MyViewHolder>() {
     private var beacons = mutableListOf<BeaconState>()
 
     fun setItem(beacons: MutableList<BeaconState>) {
-        // TODO:  参照しているため、改善
         this.beacons = beacons.toMutableList()
         this.beacons.reverse()  //最新のbeacon情報を一番上に表示される様にする
         notifyDataSetChanged()      //recycleViewの更新

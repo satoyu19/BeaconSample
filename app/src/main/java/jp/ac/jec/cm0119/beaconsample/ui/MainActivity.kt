@@ -1,24 +1,20 @@
 package jp.ac.jec.cm0119.beaconsample.ui
 
 import android.Manifest
-import android.content.Context
-import android.content.Intent
+import android.app.NotificationManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import jp.ac.jec.cm0119.beaconsample.adapters.BeaconState
 import jp.ac.jec.cm0119.beaconsample.adapters.BeaconsAdapter
 import jp.ac.jec.cm0119.beaconsample.databinding.ActivityMainBinding
-import jp.ac.jec.cm0119.beaconsample.util.Constants.Companion.BEACON_UUID
-import jp.ac.jec.cm0119.beaconsample.util.Constants.Companion.IBEACON_FORMAT
 import jp.ac.jec.cm0119.beaconsample.viewmodel.MainViewModel
 import org.altbeacon.beacon.*
 
@@ -39,6 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     private val mAdapter by lazy { BeaconsAdapter() }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -82,7 +79,11 @@ class MainActivity : AppCompatActivity() {
             mAdapter.setItem(it)
         }
 
+    val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         mainViewModel.setUpBeacon()
+
+        // TODO: フォアグラウンドサービスでビーコン開始をするとANRが発生する
+        mainViewModel.setupForegroundService(manager)   //フォアグラウンドサービスの開始
     }
 
     var alertDialog: AlertDialog? = null
@@ -111,8 +112,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val rangingObserver = Observer<Collection<Beacon>> { beacons ->
-        Log.d("MainActivity", "Ranged: ${beacons.count()} beacons")
-        if (mainViewModel.beaconManager.rangedRegions.size > 0) { //ビーコンが一つ以上検出されている場合
+        if (mainViewModel.beaconManager.rangedRegions.isNotEmpty()) { //ビーコンが一つ以上検出されている場合
             Log.i("MainActivity","レンジング有効: ${beacons.count()} 個のビーコンが検出されました")
             mainViewModel.detectionBeacon(beacons as MutableCollection<Beacon>?)
         }

@@ -2,22 +2,24 @@ package jp.ac.jec.cm0119.beaconsample.viewmodel
 
 import android.Manifest
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Intent
 import android.os.Build
+import jp.ac.jec.cm0119.beaconsample.R
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jp.ac.jec.cm0119.beaconsample.adapters.BeaconState
-import jp.ac.jec.cm0119.beaconsample.adapters.BeaconsAdapter
-import jp.ac.jec.cm0119.beaconsample.databinding.ActivityMainBinding
+import jp.ac.jec.cm0119.beaconsample.ui.MainActivity
 import jp.ac.jec.cm0119.beaconsample.util.Constants
 import org.altbeacon.beacon.*
-import org.altbeacon.bluetooth.BluetoothMedic
 import javax.inject.Inject
 
 /**
@@ -31,14 +33,13 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
     val mRegion by lazy {
         //uuidの例外処理
         val uuid = try {
-            Identifier.parse(Constants.BEACON_UUID)
+            Identifier.parse(Constants.BEACON_UUID_HOME)
         } catch (e: Exception) {
             null
         }
         //リージョン(監視領域)を設定することで、設置してあるビーコンを検知することができる
         //インスタンス化の際に、UUID, Major, Minor の各々のフォーマットにマッチしないときは例外が吐かれるので対応が必要
         /** 第一引数は必ず識別しになる一意のな文字列を入れること。複数のRegionを設定しても全て同じRegionの扱いになってしまう?**/
-        // TODO: nullの時の動作確認、学校のビーコンが多い状況下でも確認する →　Answer:学校等のビーコンが多い状況下では複数検出される
         Region("iBeacon", uuid, null, null)   //uuid(16B(128b)?)
     }
 
@@ -76,7 +77,6 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
     fun setUpBeacon() {
 
         beaconManager = BeaconManager.getInstanceForApplication(getApplication())
-        val regionViewModel = beaconManager.getRegionViewModel(mRegion)
         // デバッグを有効にすると、ライブラリからLogcatに多くの詳細なデバッグ情報が送信。トラブルシューティングに有効。
         // BeaconManager.setDebug(true)
 
@@ -131,7 +131,6 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
 
     //ビーコンの検知結果をbeaconsに追加する
     fun detectionBeacon(beacons: MutableCollection<Beacon>?) {  //beacons　→　検知したすべてのビーコンを表す
-        Log.i("Test", "実行中")
         //つまり、ビーコンのuuidを指定しているため、一秒に一回固定のビーコンの情報が取れる
         beacons?.let {
             for (beacon in beacons) {   //ここは、常に一つだけと言うことになる
@@ -183,22 +182,44 @@ class MainViewModel @Inject constructor(application: Application): AndroidViewMo
         Log.d("MainActivity", "Determine State: $state")
     }
 
-    //fun setupForegroundService() {
-    //        val builder = Notification.Builder(this, "BeaconReferenceApp")
-    //        builder.setSmallIcon(R.drawable.ic_launcher_background)
-    //        builder.setContentTitle("Scanning for Beacons")
-    //        val intent = Intent(this, MainActivity::class.java)
-    //        val pendingIntent = PendingIntent.getActivity(
-    //                this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT + PendingIntent.FLAG_IMMUTABLE
-    //        )
-    //        builder.setContentIntent(pendingIntent);
-    //        val channel =  NotificationChannel("beacon-ref-notification-id",
-    //            "My Notification Name", NotificationManager.IMPORTANCE_DEFAULT)
-    //        channel.setDescription("My Notification Channel Description")
-    //        val notificationManager =  getSystemService(
-    //                Context.NOTIFICATION_SERVICE) as NotificationManager
-    //        notificationManager.createNotificationChannel(channel);
-    //        builder.setChannelId(channel.getId());
-    //        BeaconManager.getInstanceForApplication(this).enableForegroundServiceScanning(builder.build(), 456);
-    //    }
+    /**
+     * Android 8.0 以上で通知を配信するには、
+     * NotificationChannel のインスタンスを createNotificationChannel() に渡すことにより、アプリの通知チャネルをシステムに登録しておく必要がある
+     * (そうしないと通知が表示されない)
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun setupForegroundService(manager: NotificationManager) {
+            if (!beaconManager.isAnyConsumerBound) {    //フォアグラウンドでの検知が開始済みだった場合にアプリが落ちるのを防ぐ
+                //(フォアグラウンドで処理を行っていることをユーザーに認識させる)通知を作成
+                val channelId = "0"
+                val channel = NotificationChannel(channelId, "Beacon service", NotificationManager.IMPORTANCE_HIGH)
+                manager.createNotificationChannel(channel)
+
+                val builder = NotificationCompat.Builder(getApplication(), channelId)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle("Beacon検知中")
+                    .setContentText("領域監視を実行しています")
+
+                //PendingIntentを作成
+                val intent = Intent(getApplication(), MainActivity::class.java)
+                val pendingIntent = PendingIntent.getActivity(getApplication(), 0, intent, PendingIntent.FLAG_IMMUTABLE)
+
+                builder.setContentIntent(pendingIntent) //通知のクリック時の遷移
+
+                /**
+                 * enableForegroundServiceScanning → ビーコンスキャンにフォアグラウンドサービスを使用するようライブラリーを設定
+                 * setEnableScheduledScanJobs(true or false)　→ スキャンを実行する際に、長時間稼働する `BeaconService` を使用するのではなく、
+                 * `JobScheduler` で実行する `ScanJob` を使用するように設定します。(以下のコードでは無効にしている、)
+                 * Android12以降だとアプリがバックグラウンドにある場合、フォアグラウンド サービスを開始することは一般的に禁止されている。
+                 * BeaconManagerのbindInternal()でstartForegroundService呼び出している
+                 */
+
+                beaconManager.enableForegroundServiceScanning(builder.build(), 3)   //foreground公式よりnotificationIdは0にしてはいけない
+                beaconManager.setEnableScheduledScanJobs(false)
+//                beaconManager.foregroundBetweenScanPeriod = 5000
+//                beaconManager.backgroundBetweenScanPeriod = 5000    //(デフォルト値、3000000(300秒))
+//                beaconManager.foregroundScanPeriod = 1100 (1100がデフォルト値)
+
+            }
+        }
 }
