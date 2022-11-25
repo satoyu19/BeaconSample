@@ -6,7 +6,8 @@
 android-beacon-library：(https://github.com/AltBeacon/android-beacon-library)<br>
 permission:(https://qiita.com/kenmaeda51415/items/d28b714cba8f710fb5db)<br>
 権限リクエスト：(https://developer.android.com/training/location/permissions?hl=ja)<br>
-フォアグラウンド・バックグラウンドでのスキャン：(https://altbeacon.github.io/android-beacon-library/foreground-service.html, https://altbeacon.github.io/android-beacon-library/battery_manager.html, http://www.davidgyoungtech.com/2022/06/25/the-rise-and-fall-of-the-foreground-service)<br> フォアグラウンドサービス：(https://altbeacon.github.io/android-beacon-library/foreground-service.html, https://qiita.com/kenmaeda51415/items/d2f720494c10f39fd985, 制限：https://developer.android.com/about/versions/12/foreground-services?hl=ja)<br>
+フォアグラウンド・バックグラウンドでのスキャン：(https://altbeacon.github.io/android-beacon-library/foreground-service.html, https://altbeacon.github.io/android-beacon-library/battery_manager.html, http://www.davidgyoungtech.com/2022/06/25/the-rise-and-fall-of-the-foreground-service)<br> 
+フォアグラウンドサービス：(https://qiita.com/kenmaeda51415/items/aa0c6e2f09f6e390a0ea, https://altbeacon.github.io/android-beacon-library/foreground-service.html, https://qiita.com/kenmaeda51415/items/d2f720494c10f39fd985, 制限：https://developer.android.com/about/versions/12/foreground-services?hl=ja)<br>
 service:(https://qiita.com/b150005/items/bc7054a520d4b858dc0f, https://qiita.com/kenmaeda51415/items/c80065a48bd11d26df84)<br>
 通知作成：(https://developer.android.com/training/notify-user/build-notification?hl=ja)
 
