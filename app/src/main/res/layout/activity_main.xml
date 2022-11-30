@@ -3,11 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <data>
-        <variable
-            name="mainViewModel"
-            type="jp.ac.jec.cm0119.beaconsample.viewmodel.MainViewModel" />
-    </data>
+<!--    <data>-->
+<!--        <variable-->
+<!--            name="mainViewModel"-->
+<!--            type="jp.ac.jec.cm0119.beaconsample.viewmodel.MainViewModel" />-->
+<!--    </data>-->
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -32,7 +32,6 @@
             android:layout_marginStart="16dp"
             android:layout_weight="1"
             android:text="@string/start_txt"
-            android:onClick="@{() -> mainViewModel.actionStartBtn()}"
             android:visibility="visible"
             app:layout_constraintBaseline_toBaselineOf="@+id/stop_btn"
             app:layout_constraintStart_toStartOf="parent" />
@@ -46,7 +45,6 @@
             android:layout_marginBottom="16dp"
             android:layout_weight="1"
             android:text="@string/stop_txt"
-            android:onClick="@{() -> mainViewModel.actionStopBtn()}"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
